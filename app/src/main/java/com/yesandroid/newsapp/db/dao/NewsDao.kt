@@ -18,6 +18,9 @@ interface NewsDao {
     @Query("Select count(*) from t_news ")
     fun getNewsCount(): Int
 
+    @Query("SELECT * FROM t_news WHERE c_id = :newsId")
+    fun getNewsById(newsId: Int): NewsEntity?
+
     @Query("DELETE FROM t_news")
     fun nukeTable()
 }

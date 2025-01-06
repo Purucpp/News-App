@@ -1,16 +1,21 @@
 package com.yesandroid.newsapp.ui.news
 
+import android.content.Context
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
+import com.yesandroid.newsapp.GlobalVariable
 import com.yesandroid.newsapp.R
 import com.yesandroid.newsapp.db.entity.NewsEntity
 
-class NewsAdapter(private val articles: List<NewsEntity>) :
+class NewsAdapter(private val mContext: Context,
+                  private val articles: List<NewsEntity>) :
     RecyclerView.Adapter<NewsAdapter.NewsViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NewsViewHolder {
@@ -21,7 +26,8 @@ class NewsAdapter(private val articles: List<NewsEntity>) :
 
     override fun onBindViewHolder(holder: NewsViewHolder, position: Int) {
         val article = articles[position]
-        holder.bind(article)
+
+        holder.bind(mContext,article)
     }
 
     override fun getItemCount(): Int = articles.size
@@ -32,7 +38,7 @@ class NewsAdapter(private val articles: List<NewsEntity>) :
         private val tvAuthor: TextView = itemView.findViewById(R.id.tvAuthor)
         private val tvDescription: TextView = itemView.findViewById(R.id.tvDescription)
 
-        fun bind(article: NewsEntity) {
+        fun bind(mContext: Context,article: NewsEntity) {
             tvTitle.text = article.title ?: "No Title"
             tvAuthor.text = "By: ${article.author ?: "Unknown"}"
             tvDescription.text = article.description ?: "No Description Available"
@@ -41,6 +47,29 @@ class NewsAdapter(private val articles: List<NewsEntity>) :
             } else {
                 imageView.setImageResource(R.drawable.ic_launcher_background)
             }
+
+            itemView.setOnClickListener{
+                val intent = Intent(mContext, NewsDetailActivity::class.java)
+                intent.putExtra("id",article.id)
+                mContext.startActivity(intent)
+            }
+
+        /*    imageView.setOnClickListener{
+                val intent = Intent(mContext, NewsDetailActivity::class.java)
+                mContext.startActivity(intent)
+            }
+            tvTitle.setOnClickListener{
+                val intent = Intent(mContext, NewsDetailActivity::class.java)
+                mContext.startActivity(intent)
+            }
+            tvDescription.setOnClickListener{
+                val intent = Intent(mContext, NewsDetailActivity::class.java)
+                mContext.startActivity(intent)
+            }*/
         }
     }
+
+
+
+
 }

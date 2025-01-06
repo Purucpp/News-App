@@ -115,6 +115,7 @@ class HomeActivity : AppCompatActivity() {
                                         }
 
                                     }
+
                                     updateView()
                                 }
                             }
@@ -138,7 +139,7 @@ class HomeActivity : AppCompatActivity() {
             {
                 if(newsEntityList.isNotEmpty())
                 {
-                    recyclerView.adapter=NewsAdapter(newsEntityList)
+                    recyclerView.adapter=NewsAdapter(this,newsEntityList)
                 }
             }
         }
