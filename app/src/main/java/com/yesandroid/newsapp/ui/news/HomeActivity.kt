@@ -6,60 +6,141 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.yesandroid.newsapp.R
+import com.yesandroid.newsapp.api.ApiUtils
 import com.yesandroid.newsapp.api.Get_Interface
 import com.yesandroid.newsapp.api.Get_Retrofit_Client
-import com.yesandroid.newsapp.api.RetrofitInstance
+import com.yesandroid.newsapp.db.NewsDatabase
+import com.yesandroid.newsapp.db.entity.NewsEntity
+import com.yesandroid.newsapp.rx.AppSchedulerProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class HomeActivity : AppCompatActivity() {
+
+    private lateinit var recyclerView: RecyclerView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_home)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        recyclerView = findViewById(R.id.recyclerView)
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+
+        val spacing = resources.getDimensionPixelSize(R.dimen.item_spacing)
+        recyclerView.addItemDecoration(ItemSpacingDecoration(spacing))
+
+
+        AppSchedulerProvider.getInstance().io().execute{
+            val count=NewsDatabase.getInstance().newsDao().getNewsCount()
+            if(count==0)
+            {
+                    val client= Get_Retrofit_Client().getClient();
+                    val service = client?.create(Get_Interface::class.java)
+                    val call = service?.getNews()
+
+                    call?.enqueue(object : Callback<ResponseBody?>
+                    {
+
+                        override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                            Log.d("Failed------", t.message.toString());
+
+                        }
+
+                        override fun onResponse(
+                            call: Call<ResponseBody?>,
+                            response: Response<ResponseBody?>
+                        ) {
+
+                            if(response.body()!=null)
+                            {
+                                val responseString = response.body()!!.string()
+                                val jsonObject = JSONObject(responseString)
+
+                                if(ApiUtils.isJsonArrayPresent(jsonObject,"articles"))
+                                {
+                                    val jsonArray=jsonObject.getJSONArray("articles")
+                                    for(i in 0 until jsonArray.length())
+                                    {
+                                        val newsEntity=NewsEntity()
+                                        newsEntity.id=i
+
+                                        var newsItem=jsonArray.getJSONObject(i)
+
+                                        if(ApiUtils.isStringPresent(newsItem,"author"))
+                                        {
+                                            newsEntity.author=newsItem.getString("author")
+                                        }
+
+                                        if(ApiUtils.isStringPresent(newsItem,"title"))
+                                        {
+                                            newsEntity.title=newsItem.getString("title")
+                                        }
+
+                                        if(ApiUtils.isStringPresent(newsItem,"description"))
+                                        {
+                                            newsEntity.description=newsItem.getString("description")
+                                        }
+
+                                        if(ApiUtils.isStringPresent(newsItem,"urlToImage"))
+                                        {
+                                            newsEntity.urlToImage=newsItem.getString("urlToImage")
+                                        }
+
+                                        if(ApiUtils.isStringPresent(newsItem,"content"))
+                                        {
+                                            newsEntity.content=newsItem.getString("content")
+                                        }
+
+                                        if(ApiUtils.isStringPresent(newsItem,"publishedAt"))
+                                        {
+                                            newsEntity.publishedAt=newsItem.getString("publishedAt")
+                                        }
+
+
+                                        AppSchedulerProvider.getInstance().io().execute {
+                                            NewsDatabase.getInstance().newsDao().add(newsEntity)
+                                        }
+
+                                    }
+                                    updateView()
+                                }
+                            }
+                            Log.d("res",response.body()!!.string())
+//                    TODO("Not yet implemented")
+                        }
+                    })
+            }else{
+                updateView()
+            }
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            delay(1000)
-          /*  try {
-                val posts = RetrofitInstance.api.getNews()
-                Log.d("API_RESPONSE", "Posts: $posts")
-            } catch (e: Exception) {
-                Log.e("API_ERROR", "Error: ${e.message}")
-            }*/
 
+    }
 
-            val client= Get_Retrofit_Client().getClient();
-            val service = client?.create(Get_Interface::class.java)
-            val call = service?.getNews()
+    fun updateView(){
+        AppSchedulerProvider.getInstance().io().execute {
+            val newsEntityList=NewsDatabase.getInstance().newsDao().getNews()
 
-            call?.enqueue(object : Callback<ResponseBody?>
+            if(newsEntityList!=null)
             {
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    Log.d("Failed------", t.message.toString());
-
+                if(newsEntityList.isNotEmpty())
+                {
+                    recyclerView.adapter=NewsAdapter(newsEntityList)
                 }
-
-                override fun onResponse(
-                    call: Call<ResponseBody?>,
-                    response: Response<ResponseBody?>
-                ) {
-                    Log.d("res",response.body()!!.string())
-//                    TODO("Not yet implemented")
-                }
-            })
+            }
         }
     }
 }
