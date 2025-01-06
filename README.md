@@ -1,2 +1,2 @@
 
-#generate apk from Andoid stuiod
+#generate apk from Andoid studiod
