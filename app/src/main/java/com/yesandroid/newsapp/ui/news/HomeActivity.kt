@@ -1,6 +1,8 @@
 package com.yesandroid.newsapp.ui.news
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -116,7 +118,19 @@ class HomeActivity : AppCompatActivity() {
 
                                     }
 
-                                    updateView()
+
+                                    val handler = Handler(Looper.getMainLooper())
+
+// Post a delayed task
+                                    handler.postDelayed({
+
+                                        println("This runs after a delay!")
+
+
+                                        updateView()
+                                    }, 6000)
+
+
                                 }
                             }
                             Log.d("res",response.body()!!.string())
@@ -139,7 +153,13 @@ class HomeActivity : AppCompatActivity() {
             {
                 if(newsEntityList.isNotEmpty())
                 {
-                    recyclerView.adapter=NewsAdapter(this,newsEntityList)
+                    try {
+                        recyclerView.adapter=NewsAdapter(this,newsEntityList)
+                    }catch (e:Exception)
+                    {
+                        e.printStackTrace()
+                    }
+
                 }
             }
         }
